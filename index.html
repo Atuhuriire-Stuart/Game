@@ -53,13 +53,30 @@
             justify-content:space-between; 
             margin-bottom:10px; 
             font-size:18px; 
+            align-items: center;
         }
         #score, #lives { 
             font-size:18px; 
             font-weight:bold; 
             text-shadow:0 0 5px var(--accent); 
         }
-        #start-screen, #game-over {
+        #pause-button {
+            background: transparent;
+            border: 2px solid var(--accent);
+            color: white;
+            padding: 8px 16px;
+            font-size: 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(74,71,163,0.5);
+            transition: all 0.18s ease;
+            display: none; /* Hidden by default */
+        }
+        #pause-button:hover, #pause-button:active { 
+            background: rgba(74,71,163,0.2);
+            box-shadow: 0 0 12px rgba(74,71,163,0.7);
+        }
+        #start-screen, #game-over, #pause-screen {
             position:absolute; 
             top:0; 
             left:0; 
@@ -72,9 +89,9 @@
             background-color: rgba(10,10,42,0.95); 
             border-radius:8px; 
             padding:20px;
-            z-index: 100; /* Higher z-index to ensure it's above touch controls */
+            z-index: 100;
         }
-        #game-over { 
+        #game-over, #pause-screen { 
             display:none; 
         }
         h1 { 
@@ -88,6 +105,12 @@
             font-size:32px; 
             margin-bottom:12px; 
         }
+        h3 {
+            color: var(--accent);
+            font-size: 36px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px var(--accent);
+        }
         button {
             background: linear-gradient(to bottom,var(--accent),#302b63); 
             color:white; 
@@ -99,10 +122,10 @@
             margin-top:12px;
             box-shadow:0 0 12px rgba(74,71,163,0.7); 
             transition: all 0.18s ease;
-            min-height: 50px; /* Better touch target */
+            min-height: 50px;
             min-width: 160px;
             position: relative;
-            z-index: 101; /* Ensure button is above everything */
+            z-index: 101;
         }
         button:hover, button:active { 
             transform:scale(1.02); 
@@ -113,6 +136,7 @@
             max-width:90%; 
             line-height:1.4; 
             font-size:15px; 
+            text-align: center;
         }
         .controls { 
             display:flex; 
@@ -143,7 +167,7 @@
             gap:12px;
             align-items:center;
             pointer-events: auto;
-            z-index: 50; /* Lower than game-over screen */
+            z-index: 50;
         }
         .touch-btn {
             width: 72px;
@@ -177,9 +201,9 @@
             #game-ui { font-size:20px; }
             h1 { font-size:48px; }
             h2 { font-size:36px; }
+            h3 { font-size: 40px; }
         }
         
-        /* Mobile-specific improvements */
         @media (max-width: 768px) {
             button {
                 padding: 16px 32px;
@@ -187,8 +211,13 @@
                 min-height: 60px;
             }
             
-            #game-over, #start-screen {
+            #game-over, #start-screen, #pause-screen {
                 padding: 30px 20px;
+            }
+            
+            #pause-button {
+                padding: 10px 20px;
+                font-size: 18px;
             }
         }
     </style>
@@ -197,6 +226,7 @@
     <div id="game-container">
         <div id="game-ui">
             <div id="score">Score: 0</div>
+            <button id="pause-button">PAUSE</button>
             <div id="lives">Lives: 100</div>
         </div>
 
@@ -208,6 +238,7 @@
             <div class="controls">
                 <div class="control-item"><p>Move: <span class="key">Drag</span></p></div>
                 <div class="control-item"><p>Shoot: <span class="key">Space</span> or <span class="key">Fire</span></p></div>
+                <div class="control-item"><p>Pause: <span class="key">P</span></p></div>
             </div>
             <button id="start-button">START GAME</button>
         </div>
@@ -216,6 +247,13 @@
             <h2>GAME OVER</h2>
             <p id="final-score">Your score: 0</p>
             <button id="restart-button">PLAY AGAIN</button>
+        </div>
+        
+        <div id="pause-screen">
+            <h3>GAME PAUSED</h3>
+            <p class="instructions">Take a break! Your progress is saved.</p>
+            <button id="resume-button">RESUME GAME</button>
+            <button id="quit-button">QUIT TO MENU</button>
         </div>
 
         <!-- Touch controls for mobile -->
@@ -237,8 +275,12 @@
         const container = document.getElementById('game-container');
         const startScreen = document.getElementById('start-screen');
         const gameOverScreen = document.getElementById('game-over');
+        const pauseScreen = document.getElementById('pause-screen');
         const startButton = document.getElementById('start-button');
         const restartButton = document.getElementById('restart-button');
+        const pauseButton = document.getElementById('pause-button');
+        const resumeButton = document.getElementById('resume-button');
+        const quitButton = document.getElementById('quit-button');
         const scoreDisplay = document.getElementById('score');
         const livesDisplay = document.getElementById('lives');
         const finalScoreDisplay = document.getElementById('final-score');
@@ -248,8 +290,9 @@
 
         // State
         let gameActive = false;
+        let gamePaused = false;
         let score = 0;
-        let lives = 100; // Increased to 100 lives
+        let lives = 100;
 
         const player = {
             x: GAME_WIDTH / 2 - 25,
@@ -282,49 +325,44 @@
 
         // Resize / high-DPI handling
         function resizeCanvas() {
-            // Container width in CSS pixels
             const containerWidth = container.clientWidth;
-            // Display width we want for the canvas (not bigger than GAME_WIDTH)
             const displayWidth = Math.min(GAME_WIDTH, containerWidth);
             const displayHeight = Math.round(displayWidth * GAME_HEIGHT / GAME_WIDTH);
-
-            // Device pixel ratio
             const dpr = Math.max(1, window.devicePixelRatio || 1);
 
-            // Set CSS size (this scales the canvas visually)
             canvas.style.width = displayWidth + 'px';
             canvas.style.height = displayHeight + 'px';
-
-            // Set actual buffer size to match DPR for crisp rendering
             canvas.width = Math.round(displayWidth * dpr);
             canvas.height = Math.round(displayHeight * dpr);
 
-            // Map drawing units so that drawing in GAME coordinates is straightforward.
-            // Compute scale between CSS pixels and game coordinates:
-            const scaleX = canvas.width / displayWidth; // equals dpr
+            const scaleX = canvas.width / displayWidth;
             const scaleY = canvas.height / displayHeight;
-            // Reset transform and scale so 1 unit in our draw code maps to 1 CSS pixel *logical* scale
             ctx.setTransform(scaleX * (displayWidth / GAME_WIDTH), 0, 0, scaleY * (displayHeight / GAME_HEIGHT), 0, 0);
         }
 
         window.addEventListener('resize', resizeCanvas);
-        // Initial resize
         resizeCanvas();
 
         // Input: keyboard
         window.addEventListener('keydown', (e) => {
             keys[e.key] = true;
+            
             // Support spacebar via code or ' '
-            if ((e.key === ' ' || e.code === 'Space') && gameActive) shoot();
+            if ((e.key === ' ' || e.code === 'Space') && gameActive && !gamePaused) shoot();
+            
+            // Pause with P key
+            if ((e.key === 'p' || e.key === 'P' || e.key === 'Escape') && gameActive) {
+                togglePause();
+            }
         });
+        
         window.addEventListener('keyup', (e) => {
             keys[e.key] = false;
         });
 
-        // Touch / pointer-based movement: drag on canvas to move ship
+        // Touch / pointer-based movement
         function updatePlayerWithPointer(e) {
             const rect = canvas.getBoundingClientRect();
-            // scale factor between CSS display width and logical GAME_WIDTH
             const displayWidth = rect.width;
             const scale = displayWidth / GAME_WIDTH;
             const xInGame = (e.clientX - rect.left) / scale;
@@ -332,16 +370,18 @@
         }
 
         canvas.addEventListener('pointerdown', (e) => {
-            if (!gameActive) return;
+            if (!gameActive || gamePaused) return;
             if (e.isPrimary) {
                 isPointerDown = true;
                 canvas.setPointerCapture && canvas.setPointerCapture(e.pointerId);
                 updatePlayerWithPointer(e);
             }
         });
+        
         canvas.addEventListener('pointermove', (e) => {
             if (isPointerDown && e.isPrimary) updatePlayerWithPointer(e);
         });
+        
         canvas.addEventListener('pointerup', (e) => {
             if (e.isPrimary) {
                 isPointerDown = false;
@@ -349,10 +389,11 @@
             }
         });
 
-        // On-screen buttons behavior (works for touch and mouse)
+        // On-screen buttons behavior
         function bindButtonHold(btn, onHoldStart, onHoldEnd) {
             let hold = false;
             const start = (e) => {
+                if (gamePaused) return;
                 e.preventDefault();
                 hold = true;
                 onHoldStart();
@@ -366,7 +407,6 @@
             window.addEventListener('pointerup', end);
             btn.addEventListener('pointercancel', end);
             btn.addEventListener('lostpointercapture', end);
-            // also support mouse click as tap
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
             });
@@ -374,53 +414,113 @@
 
         bindButtonHold(leftBtn, () => leftHold = true, () => leftHold = false);
         bindButtonHold(rightBtn, () => rightHold = true, () => rightHold = false);
-        // Fire button: one-shot per press, or repeated if held (simple repeat)
+        
         let fireRepeatTimer = null;
         bindButtonHold(fireBtn,
-            () => { shoot(); fireRepeatTimer = setInterval(shoot, 180); },
+            () => { 
+                if (!gamePaused) {
+                    shoot(); 
+                    fireRepeatTimer = setInterval(shoot, 180); 
+                }
+            },
             () => { clearInterval(fireRepeatTimer); fireRepeatTimer = null; }
         );
 
-        // Start / restart - FIXED for mobile
+        // Button event handling
         function setupButton(button, handler) {
-            // Remove any existing event listeners to prevent duplicates
-            button.removeEventListener('click', handler);
-            button.removeEventListener('touchstart', handler);
+            // Clear any existing event listeners
+            const newButton = button.cloneNode(true);
+            button.parentNode.replaceChild(newButton, button);
             
-            // Add both click and touchstart for maximum compatibility
-            button.addEventListener('click', handler);
-            button.addEventListener('touchstart', handler);
-            
-            // Prevent default to avoid any browser interference
-            button.addEventListener('touchstart', (e) => {
+            // Add new event listeners
+            newButton.addEventListener('click', handler);
+            newButton.addEventListener('touchstart', function(e) {
                 e.preventDefault();
-            });
+                handler();
+            }, { passive: false });
+            
+            return newButton;
         }
 
-        setupButton(startButton, startGame);
-        setupButton(restartButton, startGame);
+        // Reinitialize buttons with proper event handlers
+        let newStartButton = setupButton(startButton, startGame);
+        let newRestartButton = setupButton(restartButton, startGame);
+        
+        // Pause button
+        pauseButton.addEventListener('click', togglePause);
+        pauseButton.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            togglePause();
+        });
+        
+        // Resume button
+        resumeButton.addEventListener('click', togglePause);
+        resumeButton.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            togglePause();
+        });
+        
+        // Quit button
+        quitButton.addEventListener('click', quitToMenu);
+        quitButton.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            quitToMenu();
+        });
+
+        // Pause/Resume function
+        function togglePause() {
+            if (!gameActive) return;
+            
+            gamePaused = !gamePaused;
+            
+            if (gamePaused) {
+                pauseScreen.style.display = 'flex';
+                pauseButton.textContent = 'RESUME';
+            } else {
+                pauseScreen.style.display = 'none';
+                pauseButton.textContent = 'PAUSE';
+                // Resume the game loop if it was running
+                if (gameActive) {
+                    requestAnimationFrame(gameLoop);
+                }
+            }
+        }
+        
+        // Quit to menu function
+        function quitToMenu() {
+            gameActive = false;
+            gamePaused = false;
+            pauseScreen.style.display = 'none';
+            startScreen.style.display = 'flex';
+            pauseButton.style.display = 'none';
+        }
 
         function startGame() {
             if (gameActive) return;
             gameActive = true;
+            gamePaused = false;
             score = 0;
-            lives = 100; // Reset to 100 lives
+            lives = 100;
             bullets = [];
             asteroids = [];
             particles = [];
             player.x = GAME_WIDTH / 2 - player.width / 2;
             startScreen.style.display = 'none';
             gameOverScreen.style.display = 'none';
+            pauseScreen.style.display = 'none';
+            pauseButton.style.display = 'block'; // Show pause button
+            pauseButton.textContent = 'PAUSE';
             updateScore();
             updateLives();
             asteroidSpawner();
-            // ensure canvas is sized to current container before playing
             resizeCanvas();
             requestAnimationFrame(gameLoop);
         }
 
         function gameOver() {
             gameActive = false;
+            gamePaused = false;
+            pauseButton.style.display = 'none'; // Hide pause button
             finalScoreDisplay.textContent = `Your score: ${score}`;
             gameOverScreen.style.display = 'flex';
         }
@@ -429,7 +529,7 @@
         function updateLives(){ livesDisplay.textContent = `Lives: ${lives}`; }
 
         function shoot(){
-            if (!gameActive) return;
+            if (!gameActive || gamePaused) return;
             bullets.push({
                 x: player.x + player.width / 2 - 2,
                 y: player.y - 4,
@@ -438,7 +538,7 @@
         }
 
         function asteroidSpawner(){
-            if (!gameActive) return;
+            if (!gameActive || gamePaused) return;
             const size = Math.random() * 30 + 20;
             asteroids.push({
                 x: Math.random() * (GAME_WIDTH - size),
@@ -446,7 +546,6 @@
                 speed: Math.random() * 2 + 1
             });
             const nextSpawn = Math.random() * 1000 + 500;
-            // Use setTimeout to schedule next spawn
             setTimeout(asteroidSpawner, nextSpawn);
         }
 
@@ -463,6 +562,8 @@
         }
 
         function update(){
+            if (gamePaused) return;
+            
             // movement from keyboard
             if (keys['ArrowLeft'] || keys['a']) player.x -= player.speed;
             if (keys['ArrowRight'] || keys['d']) player.x += player.speed;
@@ -512,11 +613,9 @@
         }
 
         function draw(){
-            // Clear background
             ctx.fillStyle = '#0a0a2a';
             ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT);
 
-            // draw stars (static positions for performance)
             for (const s of stars){
                 ctx.globalAlpha = s.alpha;
                 ctx.fillStyle = 'white';
@@ -524,7 +623,6 @@
             }
             ctx.globalAlpha = 1;
 
-            // player (triangle)
             ctx.fillStyle = player.color;
             ctx.beginPath();
             ctx.moveTo(player.x + player.width/2, player.y);
@@ -533,11 +631,9 @@
             ctx.closePath();
             ctx.fill();
 
-            // bullets
             ctx.fillStyle = '#ff6b6b';
             for (const bullet of bullets) ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
 
-            // asteroids
             for (const asteroid of asteroids){
                 ctx.fillStyle = '#8a8a8a';
                 ctx.beginPath();
@@ -549,7 +645,6 @@
                 ctx.fill();
             }
 
-            // particles
             for (const particle of particles){
                 ctx.fillStyle = particle.color;
                 ctx.globalAlpha = Math.max(0, particle.life / 24);
@@ -557,27 +652,34 @@
                 ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI*2);
                 ctx.fill();
             }
+            
+            // Draw "PAUSED" text if game is paused
+            if (gamePaused) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+                
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 48px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('PAUSED', GAME_WIDTH / 2, GAME_HEIGHT / 2);
+            }
+            
             ctx.globalAlpha = 1;
         }
 
         function gameLoop(){
-            if (!gameActive) return;
+            if (!gameActive || gamePaused) return;
             update();
             draw();
             requestAnimationFrame(gameLoop);
         }
 
-        // Draw initial static screen (scaled)
         draw();
 
-        // --- Auto-start behavior when ?autostart=1 is present ---
         function tryAutoStart(){
             const params = new URLSearchParams(window.location.search);
             if (params.get('autostart') === '1') {
-                // Start the game visually immediately
                 startGame();
-
-                // Add a one-time pointerdown handler to supply a user gesture (helps unlock keyboard/audio on some mobile browsers)
                 document.body.addEventListener('pointerdown', function onFirstInteraction() {
                     document.body.removeEventListener('pointerdown', onFirstInteraction);
                 }, { once: true });
@@ -586,7 +688,6 @@
 
         window.addEventListener('DOMContentLoaded', tryAutoStart);
 
-        // Prevent long-press context menu on mobile during gameplay
         window.addEventListener('contextmenu', (e) => {
             if (gameActive) e.preventDefault();
         }, { passive: false });
