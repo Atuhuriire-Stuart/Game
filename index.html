@@ -25,7 +25,7 @@
             background: linear-gradient(to bottom, var(--bg-top), var(--bg-mid), var(--bg-bottom));
             font-family: 'Arial', sans-serif;
             color: white;
-            -webkit-touch-callout: none; /* disable iOS callout */
+            -webkit-touch-callout: none;
             -webkit-user-select: none;
             -ms-user-select: none;
             user-select: none;
@@ -36,7 +36,7 @@
             width: min(800px, 95vw);
             max-width: 800px;
             text-align: center;
-            touch-action: none; /* let pointer events handle gestures */
+            touch-action: none;
         }
         #game-canvas {
             border: 2px solid var(--accent);
@@ -48,29 +48,90 @@
             height: auto;
             -webkit-tap-highlight-color: transparent;
         }
-        #game-ui { display:flex; justify-content:space-between; margin-bottom:10px; font-size:18px; }
-        #score,#lives { font-size:18px; font-weight:bold; text-shadow:0 0 5px var(--accent); }
-        #start-screen,#game-over {
-            position:absolute; top:0; left:0; width:100%; height:100%;
-            display:flex; flex-direction:column; justify-content:center; align-items:center;
-            background-color: rgba(10,10,42,0.85); border-radius:8px; padding:20px;
-            z-index: 30; /* Ensure it's above touch controls */
+        #game-ui { 
+            display:flex; 
+            justify-content:space-between; 
+            margin-bottom:10px; 
+            font-size:18px; 
         }
-        #game-over { display:none; }
-        h1 { color:var(--accent); font-size:44px; margin-bottom:12px; text-shadow:0 0 10px var(--accent); }
-        h2 { color:#ff6b6b; font-size:32px; margin-bottom:12px; }
+        #score, #lives { 
+            font-size:18px; 
+            font-weight:bold; 
+            text-shadow:0 0 5px var(--accent); 
+        }
+        #start-screen, #game-over {
+            position:absolute; 
+            top:0; 
+            left:0; 
+            width:100%; 
+            height:100%;
+            display:flex; 
+            flex-direction:column; 
+            justify-content:center; 
+            align-items:center;
+            background-color: rgba(10,10,42,0.95); 
+            border-radius:8px; 
+            padding:20px;
+            z-index: 100; /* Higher z-index to ensure it's above touch controls */
+        }
+        #game-over { 
+            display:none; 
+        }
+        h1 { 
+            color:var(--accent); 
+            font-size:44px; 
+            margin-bottom:12px; 
+            text-shadow:0 0 10px var(--accent); 
+        }
+        h2 { 
+            color:#ff6b6b; 
+            font-size:32px; 
+            margin-bottom:12px; 
+        }
         button {
-            background: linear-gradient(to bottom,var(--accent),#302b63); color:white; border:none;
-            padding:12px 24px; font-size:18px; border-radius:30px; cursor:pointer; margin-top:12px;
-            box-shadow:0 0 12px rgba(74,71,163,0.7); transition: all 0.18s ease;
-            -webkit-tap-highlight-color: rgba(255,255,255,0.3); /* Better touch feedback */
-            min-height: 44px; /* Minimum touch target size for accessibility */
+            background: linear-gradient(to bottom,var(--accent),#302b63); 
+            color:white; 
+            border:none;
+            padding:12px 24px; 
+            font-size:18px; 
+            border-radius:30px; 
+            cursor:pointer; 
+            margin-top:12px;
+            box-shadow:0 0 12px rgba(74,71,163,0.7); 
+            transition: all 0.18s ease;
+            min-height: 50px; /* Better touch target */
+            min-width: 160px;
+            position: relative;
+            z-index: 101; /* Ensure button is above everything */
         }
-        button:hover { transform:scale(1.02); box-shadow:0 0 18px rgba(74,71,163,0.9); }
-        .instructions { margin-top:12px; max-width:90%; line-height:1.4; font-size:15px; }
-        .controls { display:flex; justify-content:center; gap:20px; margin-top:12px; }
-        .control-item { text-align:center; font-size:14px; }
-        .key { display:inline-block; background-color:var(--accent); padding:5px 10px; border-radius:5px; margin:0 5px; box-shadow:0 0 5px rgba(74,71,163,0.7); }
+        button:hover, button:active { 
+            transform:scale(1.02); 
+            box-shadow:0 0 18px rgba(74,71,163,0.9); 
+        }
+        .instructions { 
+            margin-top:12px; 
+            max-width:90%; 
+            line-height:1.4; 
+            font-size:15px; 
+        }
+        .controls { 
+            display:flex; 
+            justify-content:center; 
+            gap:20px; 
+            margin-top:12px; 
+        }
+        .control-item { 
+            text-align:center; 
+            font-size:14px; 
+        }
+        .key { 
+            display:inline-block; 
+            background-color:var(--accent); 
+            padding:5px 10px; 
+            border-radius:5px; 
+            margin:0 5px; 
+            box-shadow:0 0 5px rgba(74,71,163,0.7); 
+        }
 
         /* Mobile touch controls */
         .touch-controls {
@@ -82,7 +143,7 @@
             gap:12px;
             align-items:center;
             pointer-events: auto;
-            z-index: 20;
+            z-index: 50; /* Lower than game-over screen */
         }
         .touch-btn {
             width: 72px;
@@ -101,13 +162,15 @@
             user-select: none;
             touch-action: manipulation;
         }
-        .touch-btn:active { transform: translateY(2px); }
+        .touch-btn:active { 
+            transform: translateY(2px); 
+        }
 
-        .touch-btn.small { width: 56px; height:56px; border-radius:12px; font-size:18px; }
-
-        /* Ensure start/game over covers scaled canvas area correctly */
-        #start-screen, #game-over {
-            pointer-events: auto;
+        .touch-btn.small { 
+            width: 56px; 
+            height:56px; 
+            border-radius:12px; 
+            font-size:18px; 
         }
 
         @media (min-width:600px){
@@ -115,13 +178,26 @@
             h1 { font-size:48px; }
             h2 { font-size:36px; }
         }
+        
+        /* Mobile-specific improvements */
+        @media (max-width: 768px) {
+            button {
+                padding: 16px 32px;
+                font-size: 20px;
+                min-height: 60px;
+            }
+            
+            #game-over, #start-screen {
+                padding: 30px 20px;
+            }
+        }
     </style>
 </head>
 <body>
     <div id="game-container">
         <div id="game-ui">
             <div id="score">Score: 0</div>
-            <div id="lives">Lives: 3</div>
+            <div id="lives">Lives: 100</div>
         </div>
 
         <canvas id="game-canvas"></canvas>
@@ -173,7 +249,7 @@
         // State
         let gameActive = false;
         let score = 0;
-        let lives = 3;
+        let lives = 100; // Increased to 100 lives
 
         const player = {
             x: GAME_WIDTH / 2 - 25,
@@ -305,21 +381,19 @@
             () => { clearInterval(fireRepeatTimer); fireRepeatTimer = null; }
         );
 
-        // Start / restart - improved for mobile
+        // Start / restart - FIXED for mobile
         function setupButton(button, handler) {
-            // Use click for desktop and pointerdown for mobile
-            button.addEventListener('click', handler);
-            button.addEventListener('pointerdown', (e) => {
-                e.preventDefault();
-                handler();
-            });
+            // Remove any existing event listeners to prevent duplicates
+            button.removeEventListener('click', handler);
+            button.removeEventListener('touchstart', handler);
             
-            // Add touch-specific styling for better feedback
-            button.addEventListener('touchstart', () => {
-                button.style.transform = 'scale(0.98)';
-            });
-            button.addEventListener('touchend', () => {
-                button.style.transform = '';
+            // Add both click and touchstart for maximum compatibility
+            button.addEventListener('click', handler);
+            button.addEventListener('touchstart', handler);
+            
+            // Prevent default to avoid any browser interference
+            button.addEventListener('touchstart', (e) => {
+                e.preventDefault();
             });
         }
 
@@ -330,7 +404,7 @@
             if (gameActive) return;
             gameActive = true;
             score = 0;
-            lives = 3;
+            lives = 100; // Reset to 100 lives
             bullets = [];
             asteroids = [];
             particles = [];
