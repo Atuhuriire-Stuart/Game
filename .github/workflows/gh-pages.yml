@@ -14,9 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v2
+      - name: Deploy to GitHub Pages (push to `gh-pages` branch)
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          path: .
-      - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v2
+          branch: gh-pages
+          folder: .
+          token: ${{ secrets.GITHUB_TOKEN }}
