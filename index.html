@@ -2,52 +2,116 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
     <title>Space Defender</title>
     <style>
+        :root {
+            --accent: #4a47a3;
+            --bg-top: #0f0c29;
+            --bg-mid: #302b63;
+            --bg-bottom: #24243e;
+        }
+        html,body{
+            height:100%;
+            margin:0;
+        }
         body {
             margin: 0;
             padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            background: linear-gradient(to bottom, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            background: linear-gradient(to bottom, var(--bg-top), var(--bg-mid), var(--bg-bottom));
             font-family: 'Arial', sans-serif;
             color: white;
+            -webkit-touch-callout: none; /* disable iOS callout */
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
             overflow: hidden;
         }
         #game-container {
             position: relative;
-            width: 800px;
+            width: min(800px, 95vw);
+            max-width: 800px;
             text-align: center;
+            touch-action: none; /* let pointer events handle gestures */
         }
         #game-canvas {
-            border: 2px solid #4a47a3;
+            border: 2px solid var(--accent);
             border-radius: 8px;
             background-color: #0a0a2a;
             box-shadow: 0 0 20px rgba(74, 71, 163, 0.5);
+            display: block;
+            width: 100%;
+            height: auto;
+            -webkit-tap-highlight-color: transparent;
         }
-        #game-ui { display:flex; justify-content:space-between; margin-bottom:10px; }
-        #score,#lives { font-size:20px; font-weight:bold; text-shadow:0 0 5px #4a47a3; }
+        #game-ui { display:flex; justify-content:space-between; margin-bottom:10px; font-size:18px; }
+        #score,#lives { font-size:18px; font-weight:bold; text-shadow:0 0 5px var(--accent); }
         #start-screen,#game-over {
             position:absolute; top:0; left:0; width:100%; height:100%;
             display:flex; flex-direction:column; justify-content:center; align-items:center;
-            background-color: rgba(10,10,42,0.8); border-radius:8px;
+            background-color: rgba(10,10,42,0.85); border-radius:8px; padding:20px;
         }
         #game-over { display:none; }
-        h1 { color:#4a47a3; font-size:48px; margin-bottom:20px; text-shadow:0 0 10px #4a47a3; }
-        h2 { color:#ff6b6b; font-size:36px; margin-bottom:20px; }
+        h1 { color:var(--accent); font-size:44px; margin-bottom:12px; text-shadow:0 0 10px var(--accent); }
+        h2 { color:#ff6b6b; font-size:32px; margin-bottom:12px; }
         button {
-            background: linear-gradient(to bottom,#4a47a3,#302b63); color:white; border:none;
-            padding:12px 30px; font-size:18px; border-radius:30px; cursor:pointer; margin-top:20px;
-            box-shadow:0 0 15px rgba(74,71,163,0.7); transition: all 0.3s ease;
+            background: linear-gradient(to bottom,var(--accent),#302b63); color:white; border:none;
+            padding:12px 24px; font-size:18px; border-radius:30px; cursor:pointer; margin-top:12px;
+            box-shadow:0 0 12px rgba(74,71,163,0.7); transition: all 0.18s ease;
         }
-        button:hover { transform:scale(1.05); box-shadow:0 0 20px rgba(74,71,163,0.9); }
-        .instructions { margin-top:20px; max-width:80%; line-height:1.5; }
-        .controls { display:flex; justify-content:center; gap:40px; margin-top:20px; }
-        .control-item { text-align:center; }
-        .key { display:inline-block; background-color:#4a47a3; padding:5px 10px; border-radius:5px; margin:0 5px; box-shadow:0 0 5px rgba(74,71,163,0.7); }
+        button:hover { transform:scale(1.02); box-shadow:0 0 18px rgba(74,71,163,0.9); }
+        .instructions { margin-top:12px; max-width:90%; line-height:1.4; font-size:15px; }
+        .controls { display:flex; justify-content:center; gap:20px; margin-top:12px; }
+        .control-item { text-align:center; font-size:14px; }
+        .key { display:inline-block; background-color:var(--accent); padding:5px 10px; border-radius:5px; margin:0 5px; box-shadow:0 0 5px rgba(74,71,163,0.7); }
+
+        /* Mobile touch controls */
+        .touch-controls {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display:flex;
+            gap:12px;
+            align-items:center;
+            pointer-events: auto;
+            z-index: 20;
+        }
+        .touch-btn {
+            width: 72px;
+            height: 72px;
+            border-radius: 14px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.08));
+            border: 1px solid rgba(255,255,255,0.06);
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            color: white;
+            font-weight: bold;
+            font-size: 20px;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        .touch-btn:active { transform: translateY(2px); }
+
+        .touch-btn.small { width: 56px; height:56px; border-radius:12px; font-size:18px; }
+
+        /* Ensure start/game over covers scaled canvas area correctly */
+        #start-screen, #game-over {
+            pointer-events: auto;
+        }
+
+        @media (min-width:600px){
+            #game-ui { font-size:20px; }
+            h1 { font-size:48px; }
+            h2 { font-size:36px; }
+        }
     </style>
 </head>
 <body>
@@ -56,14 +120,15 @@
             <div id="score">Score: 0</div>
             <div id="lives">Lives: 3</div>
         </div>
-        <canvas id="game-canvas" width="800" height="500"></canvas>
+
+        <canvas id="game-canvas"></canvas>
 
         <div id="start-screen">
             <h1>SPACE DEFENDER</h1>
-            <p class="instructions">Defend your space from incoming asteroids! Shoot them before they reach the bottom.</p>
+            <p class="instructions">Defend your space from incoming asteroids! Drag on the play area to move the ship. Use the on-screen fire button or the spacebar to shoot.</p>
             <div class="controls">
-                <div class="control-item"><p>Move: <span class="key">←</span> <span class="key">→</span></p></div>
-                <div class="control-item"><p>Shoot: <span class="key">Space</span></p></div>
+                <div class="control-item"><p>Move: <span class="key">Drag</span></p></div>
+                <div class="control-item"><p>Shoot: <span class="key">Space</span> or <span class="key">Fire</span></p></div>
             </div>
             <button id="start-button">START GAME</button>
         </div>
@@ -73,12 +138,24 @@
             <p id="final-score">Your score: 0</p>
             <button id="restart-button">PLAY AGAIN</button>
         </div>
+
+        <!-- Touch controls for mobile -->
+        <div class="touch-controls" aria-hidden="false">
+            <div id="left-btn" class="touch-btn small" role="button" aria-label="Move left">◀</div>
+            <div id="fire-btn" class="touch-btn" role="button" aria-label="Fire">FIRE</div>
+            <div id="right-btn" class="touch-btn small" role="button" aria-label="Move right">▶</div>
+        </div>
     </div>
 
     <script>
+        // GAME CONFIG
+        const GAME_WIDTH = 800;
+        const GAME_HEIGHT = 500;
+
         // Elements
         const canvas = document.getElementById('game-canvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const container = document.getElementById('game-container');
         const startScreen = document.getElementById('start-screen');
         const gameOverScreen = document.getElementById('game-over');
         const startButton = document.getElementById('start-button');
@@ -86,6 +163,9 @@
         const scoreDisplay = document.getElementById('score');
         const livesDisplay = document.getElementById('lives');
         const finalScoreDisplay = document.getElementById('final-score');
+        const leftBtn = document.getElementById('left-btn');
+        const rightBtn = document.getElementById('right-btn');
+        const fireBtn = document.getElementById('fire-btn');
 
         // State
         let gameActive = false;
@@ -93,42 +173,155 @@
         let lives = 3;
 
         const player = {
-            x: canvas.width / 2 - 25,
-            y: canvas.height - 60,
+            x: GAME_WIDTH / 2 - 25,
+            y: GAME_HEIGHT - 60,
             width: 50, height: 50,
-            speed: 7,
+            speed: 6.5,
             color: '#4a47a3'
         };
 
         let bullets = [];
         let asteroids = [];
         let particles = [];
-        const keys = {};
+        let keys = {};
+        let leftHold = false, rightHold = false;
 
-        // Input
+        // Pointer drag state for touch/mouse movement
+        let isPointerDown = false;
+
+        // Stars precomputed (avoid re-randomizing every frame for perf)
+        const stars = [];
+        const STAR_COUNT = 60;
+        for (let i = 0; i < STAR_COUNT; i++) {
+            stars.push({
+                x: Math.random() * GAME_WIDTH,
+                y: Math.random() * GAME_HEIGHT,
+                size: Math.random() * 1.8,
+                alpha: 0.4 + Math.random() * 0.6
+            });
+        }
+
+        // Resize / high-DPI handling
+        function resizeCanvas() {
+            // Container width in CSS pixels
+            const containerWidth = container.clientWidth;
+            // Display width we want for the canvas (not bigger than GAME_WIDTH)
+            const displayWidth = Math.min(GAME_WIDTH, containerWidth);
+            const displayHeight = Math.round(displayWidth * GAME_HEIGHT / GAME_WIDTH);
+
+            // Device pixel ratio
+            const dpr = Math.max(1, window.devicePixelRatio || 1);
+
+            // Set CSS size (this scales the canvas visually)
+            canvas.style.width = displayWidth + 'px';
+            canvas.style.height = displayHeight + 'px';
+
+            // Set actual buffer size to match DPR for crisp rendering
+            canvas.width = Math.round(displayWidth * dpr);
+            canvas.height = Math.round(displayHeight * dpr);
+
+            // Map drawing units so that drawing in GAME coordinates is straightforward.
+            // Compute scale between CSS pixels and game coordinates:
+            const scaleX = canvas.width / displayWidth; // equals dpr
+            const scaleY = canvas.height / displayHeight;
+            // Reset transform and scale so 1 unit in our draw code maps to 1 CSS pixel *logical* scale
+            ctx.setTransform(scaleX * (displayWidth / GAME_WIDTH), 0, 0, scaleY * (displayHeight / GAME_HEIGHT), 0, 0);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        // Initial resize
+        resizeCanvas();
+
+        // Input: keyboard
         window.addEventListener('keydown', (e) => {
             keys[e.key] = true;
+            // Support spacebar via code or ' '
             if ((e.key === ' ' || e.code === 'Space') && gameActive) shoot();
         });
-        window.addEventListener('keyup', (e) => keys[e.key] = false);
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        // Touch / pointer-based movement: drag on canvas to move ship
+        function updatePlayerWithPointer(e) {
+            const rect = canvas.getBoundingClientRect();
+            // scale factor between CSS display width and logical GAME_WIDTH
+            const displayWidth = rect.width;
+            const scale = displayWidth / GAME_WIDTH;
+            const xInGame = (e.clientX - rect.left) / scale;
+            player.x = Math.max(0, Math.min(GAME_WIDTH - player.width, xInGame - player.width / 2));
+        }
+
+        canvas.addEventListener('pointerdown', (e) => {
+            if (!gameActive) return;
+            if (e.isPrimary) {
+                isPointerDown = true;
+                canvas.setPointerCapture && canvas.setPointerCapture(e.pointerId);
+                updatePlayerWithPointer(e);
+            }
+        });
+        canvas.addEventListener('pointermove', (e) => {
+            if (isPointerDown && e.isPrimary) updatePlayerWithPointer(e);
+        });
+        canvas.addEventListener('pointerup', (e) => {
+            if (e.isPrimary) {
+                isPointerDown = false;
+                try { canvas.releasePointerCapture && canvas.releasePointerCapture(e.pointerId); } catch {}
+            }
+        });
+
+        // On-screen buttons behavior (works for touch and mouse)
+        function bindButtonHold(btn, onHoldStart, onHoldEnd) {
+            let hold = false;
+            const start = (e) => {
+                e.preventDefault();
+                hold = true;
+                onHoldStart();
+            };
+            const end = (e) => {
+                e.preventDefault();
+                hold = false;
+                onHoldEnd();
+            };
+            btn.addEventListener('pointerdown', start);
+            window.addEventListener('pointerup', end);
+            btn.addEventListener('pointercancel', end);
+            btn.addEventListener('lostpointercapture', end);
+            // also support mouse click as tap
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+            });
+        }
+
+        bindButtonHold(leftBtn, () => leftHold = true, () => leftHold = false);
+        bindButtonHold(rightBtn, () => rightHold = true, () => rightHold = false);
+        // Fire button: one-shot per press, or repeated if held (simple repeat)
+        let fireRepeatTimer = null;
+        bindButtonHold(fireBtn,
+            () => { shoot(); fireRepeatTimer = setInterval(shoot, 180); },
+            () => { clearInterval(fireRepeatTimer); fireRepeatTimer = null; }
+        );
+
+        // Start / restart
         startButton.addEventListener('click', startGame);
         restartButton.addEventListener('click', startGame);
 
-        // Game control
         function startGame() {
-            if (gameActive) return; // guard against double-start
+            if (gameActive) return;
             gameActive = true;
             score = 0;
             lives = 3;
             bullets = [];
             asteroids = [];
             particles = [];
-            player.x = canvas.width / 2 - 25;
+            player.x = GAME_WIDTH / 2 - player.width / 2;
             startScreen.style.display = 'none';
             gameOverScreen.style.display = 'none';
             updateScore();
             updateLives();
             asteroidSpawner();
+            // ensure canvas is sized to current container before playing
+            resizeCanvas();
             requestAnimationFrame(gameLoop);
         }
 
@@ -142,9 +335,10 @@
         function updateLives(){ livesDisplay.textContent = `Lives: ${lives}`; }
 
         function shoot(){
+            if (!gameActive) return;
             bullets.push({
                 x: player.x + player.width / 2 - 2,
-                y: player.y,
+                y: player.y - 4,
                 width: 4, height: 15, speed: 10
             });
         }
@@ -153,31 +347,39 @@
             if (!gameActive) return;
             const size = Math.random() * 30 + 20;
             asteroids.push({
-                x: Math.random() * (canvas.width - size),
+                x: Math.random() * (GAME_WIDTH - size),
                 y: -size, width: size, height: size,
                 speed: Math.random() * 2 + 1
             });
             const nextSpawn = Math.random() * 1000 + 500;
+            // Use setTimeout to schedule next spawn
             setTimeout(asteroidSpawner, nextSpawn);
         }
 
         function createParticles(x,y,color,count){
-            for(let i=0;i<count;i++){ 
+            for(let i=0;i<count;i++){
                 particles.push({
                     x,y,
                     size: Math.random()*3+1,
-                    speedX: Math.random()*4-2,
-                    speedY: Math.random()*4-2,
-                    color, life: 30
+                    speedX: (Math.random()*4-2) * 0.8,
+                    speedY: (Math.random()*4-2) * 0.8,
+                    color, life: 24
                 });
             }
         }
 
         function update(){
+            // movement from keyboard
             if (keys['ArrowLeft'] || keys['a']) player.x -= player.speed;
             if (keys['ArrowRight'] || keys['d']) player.x += player.speed;
+
+            // movement from on-screen hold buttons
+            if (leftHold) player.x -= player.speed;
+            if (rightHold) player.x += player.speed;
+
+            // clamp
             if (player.x < 0) player.x = 0;
-            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+            if (player.x + player.width > GAME_WIDTH) player.x = GAME_WIDTH - player.width;
 
             for (let i = bullets.length - 1; i >= 0; i--){
                 bullets[i].y -= bullets[i].speed;
@@ -186,18 +388,19 @@
 
             for (let i = asteroids.length - 1; i >= 0; i--){
                 asteroids[i].y += asteroids[i].speed;
-                if (asteroids[i].y > canvas.height){
+                if (asteroids[i].y > GAME_HEIGHT){
                     asteroids.splice(i,1);
                     lives--; updateLives();
                     if (lives <= 0) gameOver();
                 }
             }
 
+            // collisions: bullets vs asteroids
             for (let i = asteroids.length - 1; i >= 0; i--){
                 for (let j = bullets.length - 1; j >= 0; j--){
                     const a = asteroids[i], b = bullets[j];
                     if (b.x < a.x + a.width && b.x + b.width > a.x && b.y < a.y + a.height && b.y + b.height > a.y){
-                        createParticles(a.x + a.width/2, a.y + a.height/2, '#ff6b6b', 10);
+                        createParticles(a.x + a.width/2, a.y + a.height/2, '#ff6b6b', 8);
                         asteroids.splice(i,1);
                         bullets.splice(j,1);
                         score += 10; updateScore();
@@ -215,19 +418,19 @@
         }
 
         function draw(){
+            // Clear background
             ctx.fillStyle = '#0a0a2a';
-            ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT);
 
-            // stars
-            ctx.fillStyle = 'white';
-            for(let i=0;i<100;i++){
-                const x = Math.random()*canvas.width;
-                const y = Math.random()*canvas.height;
-                const size = Math.random()*2;
-                ctx.fillRect(x,y,size,size);
+            // draw stars (static positions for performance)
+            for (const s of stars){
+                ctx.globalAlpha = s.alpha;
+                ctx.fillStyle = 'white';
+                ctx.fillRect(s.x, s.y, s.size, s.size);
             }
+            ctx.globalAlpha = 1;
 
-            // player
+            // player (triangle)
             ctx.fillStyle = player.color;
             ctx.beginPath();
             ctx.moveTo(player.x + player.width/2, player.y);
@@ -255,7 +458,7 @@
             // particles
             for (const particle of particles){
                 ctx.fillStyle = particle.color;
-                ctx.globalAlpha = particle.life / 30;
+                ctx.globalAlpha = Math.max(0, particle.life / 24);
                 ctx.beginPath();
                 ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI*2);
                 ctx.fill();
@@ -270,12 +473,10 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // Draw initial screen once
+        // Draw initial static screen (scaled)
         draw();
 
         // --- Auto-start behavior when ?autostart=1 is present ---
-        // Example instant-play URL:
-        // https://Atuhuriire-Stuart.github.io/Game/?autostart=1
         function tryAutoStart(){
             const params = new URLSearchParams(window.location.search);
             if (params.get('autostart') === '1') {
@@ -290,6 +491,12 @@
         }
 
         window.addEventListener('DOMContentLoaded', tryAutoStart);
+
+        // Prevent long-press context menu on mobile during gameplay
+        window.addEventListener('contextmenu', (e) => {
+            if (gameActive) e.preventDefault();
+        }, { passive: false });
+
     </script>
 </body>
 </html>
