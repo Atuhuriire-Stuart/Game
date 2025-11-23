@@ -390,42 +390,81 @@
             }
         });
 
-        // On-screen buttons behavior
-        function bindButtonHold(btn, onHoldStart, onHoldEnd) {
-            let hold = false;
-            const start = (e) => {
+        // Improved touch controls with better simultaneous input handling
+        function setupTouchControls() {
+            // Left button
+            leftBtn.addEventListener('pointerdown', (e) => {
                 if (gamePaused) return;
                 e.preventDefault();
-                hold = true;
-                onHoldStart();
-            };
-            const end = (e) => {
+                leftHold = true;
+                leftBtn.style.transform = 'translateY(2px)';
+            });
+            
+            leftBtn.addEventListener('pointerup', (e) => {
                 e.preventDefault();
-                hold = false;
-                onHoldEnd();
-            };
-            btn.addEventListener('pointerdown', start);
-            window.addEventListener('pointerup', end);
-            btn.addEventListener('pointercancel', end);
-            btn.addEventListener('lostpointercapture', end);
-            btn.addEventListener('click', (e) => {
+                leftHold = false;
+                leftBtn.style.transform = '';
+            });
+            
+            leftBtn.addEventListener('pointercancel', (e) => {
                 e.preventDefault();
+                leftHold = false;
+                leftBtn.style.transform = '';
+            });
+            
+            // Right button
+            rightBtn.addEventListener('pointerdown', (e) => {
+                if (gamePaused) return;
+                e.preventDefault();
+                rightHold = true;
+                rightBtn.style.transform = 'translateY(2px)';
+            });
+            
+            rightBtn.addEventListener('pointerup', (e) => {
+                e.preventDefault();
+                rightHold = false;
+                rightBtn.style.transform = '';
+            });
+            
+            rightBtn.addEventListener('pointercancel', (e) => {
+                e.preventDefault();
+                rightHold = false;
+                rightBtn.style.transform = '';
+            });
+            
+            // Fire button with auto-repeat
+            let fireInterval;
+            fireBtn.addEventListener('pointerdown', (e) => {
+                if (gamePaused) return;
+                e.preventDefault();
+                shoot();
+                fireBtn.style.transform = 'translateY(2px)';
+                
+                // Start auto-repeat after initial shot
+                fireInterval = setInterval(() => {
+                    if (gameActive && !gamePaused) shoot();
+                }, 180);
+            });
+            
+            fireBtn.addEventListener('pointerup', (e) => {
+                e.preventDefault();
+                fireBtn.style.transform = '';
+                clearInterval(fireInterval);
+            });
+            
+            fireBtn.addEventListener('pointercancel', (e) => {
+                e.preventDefault();
+                fireBtn.style.transform = '';
+                clearInterval(fireInterval);
+            });
+            
+            // Prevent context menu on long press
+            [leftBtn, rightBtn, fireBtn].forEach(btn => {
+                btn.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                });
             });
         }
-
-        bindButtonHold(leftBtn, () => leftHold = true, () => leftHold = false);
-        bindButtonHold(rightBtn, () => rightHold = true, () => rightHold = false);
-        
-        let fireRepeatTimer = null;
-        bindButtonHold(fireBtn,
-            () => { 
-                if (!gamePaused) {
-                    shoot(); 
-                    fireRepeatTimer = setInterval(shoot, 180); 
-                }
-            },
-            () => { clearInterval(fireRepeatTimer); fireRepeatTimer = null; }
-        );
 
         // Button event handling
         function setupButton(button, handler) {
@@ -482,6 +521,13 @@
                     clearTimeout(asteroidSpawnTimer);
                     asteroidSpawnTimer = null;
                 }
+                
+                // Reset touch button states when paused
+                leftHold = false;
+                rightHold = false;
+                leftBtn.style.transform = '';
+                rightBtn.style.transform = '';
+                fireBtn.style.transform = '';
             } else {
                 pauseScreen.style.display = 'none';
                 pauseButton.textContent = 'PAUSE';
@@ -505,13 +551,16 @@
                 clearTimeout(asteroidSpawnTimer);
                 asteroidSpawnTimer = null;
             }
-            if (fireRepeatTimer) {
-                clearInterval(fireRepeatTimer);
-                fireRepeatTimer = null;
-            }
             pauseScreen.style.display = 'none';
             startScreen.style.display = 'flex';
             pauseButton.style.display = 'none';
+            
+            // Reset touch button states
+            leftHold = false;
+            rightHold = false;
+            leftBtn.style.transform = '';
+            rightBtn.style.transform = '';
+            fireBtn.style.transform = '';
         }
 
         function startGame() {
@@ -553,6 +602,13 @@
             pauseButton.style.display = 'none'; // Hide pause button
             finalScoreDisplay.textContent = `Your score: ${score}`;
             gameOverScreen.style.display = 'flex';
+            
+            // Reset touch button states
+            leftHold = false;
+            rightHold = false;
+            leftBtn.style.transform = '';
+            rightBtn.style.transform = '';
+            fireBtn.style.transform = '';
         }
 
         function updateScore(){ scoreDisplay.textContent = `Score: ${score}`; }
@@ -713,6 +769,8 @@
             requestAnimationFrame(gameLoop);
         }
 
+        // Initialize touch controls
+        setupTouchControls();
         draw();
 
         function tryAutoStart(){
