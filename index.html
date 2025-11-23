@@ -54,6 +54,7 @@
             position:absolute; top:0; left:0; width:100%; height:100%;
             display:flex; flex-direction:column; justify-content:center; align-items:center;
             background-color: rgba(10,10,42,0.85); border-radius:8px; padding:20px;
+            z-index: 30; /* Ensure it's above touch controls */
         }
         #game-over { display:none; }
         h1 { color:var(--accent); font-size:44px; margin-bottom:12px; text-shadow:0 0 10px var(--accent); }
@@ -62,6 +63,8 @@
             background: linear-gradient(to bottom,var(--accent),#302b63); color:white; border:none;
             padding:12px 24px; font-size:18px; border-radius:30px; cursor:pointer; margin-top:12px;
             box-shadow:0 0 12px rgba(74,71,163,0.7); transition: all 0.18s ease;
+            -webkit-tap-highlight-color: rgba(255,255,255,0.3); /* Better touch feedback */
+            min-height: 44px; /* Minimum touch target size for accessibility */
         }
         button:hover { transform:scale(1.02); box-shadow:0 0 18px rgba(74,71,163,0.9); }
         .instructions { margin-top:12px; max-width:90%; line-height:1.4; font-size:15px; }
@@ -302,9 +305,26 @@
             () => { clearInterval(fireRepeatTimer); fireRepeatTimer = null; }
         );
 
-        // Start / restart
-        startButton.addEventListener('click', startGame);
-        restartButton.addEventListener('click', startGame);
+        // Start / restart - improved for mobile
+        function setupButton(button, handler) {
+            // Use click for desktop and pointerdown for mobile
+            button.addEventListener('click', handler);
+            button.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                handler();
+            });
+            
+            // Add touch-specific styling for better feedback
+            button.addEventListener('touchstart', () => {
+                button.style.transform = 'scale(0.98)';
+            });
+            button.addEventListener('touchend', () => {
+                button.style.transform = '';
+            });
+        }
+
+        setupButton(startButton, startGame);
+        setupButton(restartButton, startGame);
 
         function startGame() {
             if (gameActive) return;
