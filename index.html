@@ -293,6 +293,7 @@
         let gamePaused = false;
         let score = 0;
         let lives = 100;
+        let asteroidSpawnTimer = null; // Track the asteroid spawn timer
 
         const player = {
             x: GAME_WIDTH / 2 - 25,
@@ -476,9 +477,18 @@
             if (gamePaused) {
                 pauseScreen.style.display = 'flex';
                 pauseButton.textContent = 'RESUME';
+                // Clear the asteroid spawn timer when paused
+                if (asteroidSpawnTimer) {
+                    clearTimeout(asteroidSpawnTimer);
+                    asteroidSpawnTimer = null;
+                }
             } else {
                 pauseScreen.style.display = 'none';
                 pauseButton.textContent = 'PAUSE';
+                // Restart asteroid spawning when resuming
+                if (gameActive && !asteroidSpawnTimer) {
+                    asteroidSpawner();
+                }
                 // Resume the game loop if it was running
                 if (gameActive) {
                     requestAnimationFrame(gameLoop);
@@ -490,6 +500,15 @@
         function quitToMenu() {
             gameActive = false;
             gamePaused = false;
+            // Clear all timers
+            if (asteroidSpawnTimer) {
+                clearTimeout(asteroidSpawnTimer);
+                asteroidSpawnTimer = null;
+            }
+            if (fireRepeatTimer) {
+                clearInterval(fireRepeatTimer);
+                fireRepeatTimer = null;
+            }
             pauseScreen.style.display = 'none';
             startScreen.style.display = 'flex';
             pauseButton.style.display = 'none';
@@ -512,7 +531,13 @@
             pauseButton.textContent = 'PAUSE';
             updateScore();
             updateLives();
+            
+            // Clear any existing timer and start fresh
+            if (asteroidSpawnTimer) {
+                clearTimeout(asteroidSpawnTimer);
+            }
             asteroidSpawner();
+            
             resizeCanvas();
             requestAnimationFrame(gameLoop);
         }
@@ -520,6 +545,11 @@
         function gameOver() {
             gameActive = false;
             gamePaused = false;
+            // Clear the asteroid spawn timer
+            if (asteroidSpawnTimer) {
+                clearTimeout(asteroidSpawnTimer);
+                asteroidSpawnTimer = null;
+            }
             pauseButton.style.display = 'none'; // Hide pause button
             finalScoreDisplay.textContent = `Your score: ${score}`;
             gameOverScreen.style.display = 'flex';
@@ -537,16 +567,25 @@
             });
         }
 
+        // FIXED: Asteroid spawner function - now uses a timer that's properly managed
         function asteroidSpawner(){
             if (!gameActive || gamePaused) return;
+            
             const size = Math.random() * 30 + 20;
             asteroids.push({
                 x: Math.random() * (GAME_WIDTH - size),
-                y: -size, width: size, height: size,
+                y: -size, 
+                width: size, 
+                height: size,
                 speed: Math.random() * 2 + 1
             });
-            const nextSpawn = Math.random() * 1000 + 500;
-            setTimeout(asteroidSpawner, nextSpawn);
+            
+            // Calculate next spawn time (gradually gets faster as score increases)
+            let baseSpawnTime = Math.max(200, 1000 - (score * 2)); // Minimum 200ms, gets faster with score
+            const nextSpawn = Math.random() * baseSpawnTime + baseSpawnTime;
+            
+            // Use a variable to track the timer so we can clear it when needed
+            asteroidSpawnTimer = setTimeout(asteroidSpawner, nextSpawn);
         }
 
         function createParticles(x,y,color,count){
